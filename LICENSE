@@ -21,9 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---
-This license covers the code in this repository only. The small result
-artifacts under results/ (trained-model weights, epoch histories, SHAP
-outputs, confusion-matrix figures) are outputs of the accompanying research
-and are provided for reproducibility. The EEGMAT dataset itself is NOT
+This license covers the code in this repository only. The EEGMAT dataset itself is NOT
 included in this repository -- it must be obtained separately from PhysioNet
 and is subject to that dataset's own license terms.

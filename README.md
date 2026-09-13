@@ -83,7 +83,7 @@ small 63→64→32→2 MLP trained on tabular features, not raw EEG.
 
 ## Usage
 
-### 1. Train + evaluate a model
+### Train + evaluate a model
 
 Each script is self-contained; run it from the directory containing its expected `data_*/`
 folder (or edit `DATA_DIR`/`RESULTS_DIR` at the top of the file):

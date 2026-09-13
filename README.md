@@ -36,19 +36,6 @@ diagnostics.
 │   │   ├── mshap_mlpBGC.py
 │   │   └── mshap_mlpBCC.py   #   (Bad-Counter; see naming note below)
 │   └── augment_eegmat.py     # leakage-safe signal augmentation for class balancing
-├── analysis/                 # post-hoc entropy / performance metrics + report builders
-│   ├── entropy_analysis.py   #   -> ./out/*.csv, *.json   (run first)
-│   ├── make_figs.py          #   -> ./out/figs/*.png      (run second)
-│   ├── build_report.py       #   -> ../reports/entropy_report.html
-│   ├── build_docx.py         #   -> ../reports/EEGMAT_MLP_entropy_metrics.docx
-│   ├── perf_analysis.py      #   -> ./out_perf/*.csv, figs/*.png
-│   ├── build_perf_docx.py    #   -> ../reports/EEGMAT_MLP_performance_report.docx
-│   └── entropy_mi_compute.py #   standalone MI/entropy check -- see note below
-├── results/                  # small artifacts produced by the 14 training runs
-│   ├── data-leak/             {data-leak.txt, results_*/{model.pth, history.npy,
-│   │                           confusion_matrix.png, metrics_per_epoch.png}}
-│   └── non-leak/               same, plus shap_outputs_*/ (SHAP CSVs + figures)
-├── reports/                  # final generated deliverables (HTML + 2 Word reports)
 ├── requirements.txt
 └── LICENSE
 ```
@@ -124,24 +111,6 @@ To reproduce the "+dummy" and "+augmented" regimes, run the same script against 
 folder that has been balanced by duplication or by `augment_eegmat.py` respectively, pointing
 `RESULTS_DIR`/`SHAP_OUTPUT_DIR` at a distinct name (e.g. `results_BGCD`, `results_BGCA`).
 
-### 2. Reproduce the entropy / performance reports
-
-The `results/` folder already contains everything these scripts need (no raw EEG required):
-
-```bash
-cd analysis
-python entropy_analysis.py   # confusion-matrix info theory, CE dynamics, weight/SHAP entropy
-python make_figs.py          # 7 figures from the above
-python build_report.py       # -> ../reports/entropy_report.html
-python build_docx.py         # -> ../reports/EEGMAT_MLP_entropy_metrics.docx
-
-python perf_analysis.py      # accuracy / kappa / MCC / AUC / per-class / training-dynamics tables
-python build_perf_docx.py    # -> ../reports/EEGMAT_MLP_performance_report.docx
-```
-
-`analysis/entropy_mi_compute.py` is a separate, standalone confusion-matrix MI/entropy
-calculator kept for cross-checking (see note below) — it takes no input files, just run it.
-
 ## Results at a glance
 
 | | data-leak | non-leak |
@@ -151,60 +120,17 @@ calculator kept for cross-checking (see note below) — it takes no input files,
 | Best model | Bad-Count + dummy (κ 0.977) | Bad-Count + dummy (κ 0.667, AUC 0.996) |
 | Failure mode | none | 3 unbalanced regimes collapse to κ ≤ 0.13 |
 
-Full tables, figures, and the EEGMAT-literature comparison are in
-[`reports/EEGMAT_MLP_performance_report.docx`](reports/EEGMAT_MLP_performance_report.docx);
-the information-theoretic breakdown (mutual information, cross-entropy dynamics, weight/SHAP
-entropy) is in
-[`reports/EEGMAT_MLP_entropy_metrics.docx`](reports/EEGMAT_MLP_entropy_metrics.docx) /
-[`reports/entropy_report.html`](reports/entropy_report.html).
-
-## Notes on the provided scripts
-
-A few things worth knowing before you run or extend these scripts:
-
-- **`mshap_mlpBF.py` had three bugs in the version originally added to this repo** that would
-  have prevented it from running at all (an unindented `print(...)` after an `if`, a stray
-  `.save(...)` missing its `np` receiver, and a missing `torch.save(model.state_dict(), ...)`
-  call that silently would have dropped the model checkpoint). All three are fixed here — see
-  the docstring at the top of that file for the exact diff. A cosmetic console-banner label
-  ("BAD COUNT", copy-pasted into the Good-Count and Full-dataset scripts) was also corrected in
-  `mshap_mlpBGC.py` and `mshap_mlpBF.py`, and the three `mshap_mlp*.py` scripts' per-run summary
-  CSVs were all writing to the *same* hardcoded filename (`mlpBBC_metrics_summary.csv`) —
-  changed to write `metrics_summary.csv` / `classification_report.csv` inside each script's own
-  `RESULTS_DIR` so three runs from one working directory no longer overwrite each other.
-- **Bad-Counter naming is inconsistent between the two conditions**: the data-leak script is
-  `leak_mlpBBC.py` / `data_BBC`, while its non-leak counterpart is `mshap_mlpBCC.py` /
-  `data_BCC`. Both refer to the same 10-subject Bad-Counter group — this is carried over from
-  the original scripts rather than introduced here; renamed folders will need matching
-  `DATA_DIR`/`RESULTS_DIR` edits.
-- **`analysis/entropy_mi_compute.py` encodes a different set of confusion matrices** than
-  `results/data-leak/data-leak.txt` and `results/non-leak/non-leak.txt` (e.g. its "Full Dataset"
-  leaky matrix is `[[81,15],[14,270]]` vs. `[[64,32],[13,271]]` reconstructed from the shipped
-  `data-leak.txt`), and references additional tables/feature sets ("TBA", "Time+TBA") not
-  otherwise present in this repository. This looks like a snapshot from a different or later
-  experiment batch than the 14 runs under `results/` — it is kept here as-is for reference, but
-  its numbers should **not** be assumed to match `reports/EEGMAT_MLP_entropy_metrics.docx`
-  without checking which experiment batch it corresponds to.
-
 ## Citation
 
-If you use this code or the accompanying results, please cite the paper (details to be added
-once published) and the dataset:
+If you use this code or the accompanying results, please cite the paper 
+
+> Sibisanu, R., Leba, M., Ionica, A. (2026). When 99% Isn't Real: Quantifying Subject-Identity Leakage
+> in EEGMAT Stress Classification. *Submitted to Entropy*.
+
+and the dataset:
 
 > Zyma, I., Tukaev, S., Seleznov, I., Kiyono, K., Popov, A., Chernykh, M., & Shpenkov, O.
 > (2019). Electroencephalograms during mental arithmetic task performance. *Data*, 4(1), 14.
-
-`src/augment_eegmat.py`'s docstring also references the duplicate-balancing approach it argues
-against:
-
-> Salankar, N., Koundal, D., & Qaisar, S. M. (2021). Stress classification by multimodal
-> physiological signals using variational mode decomposition and machine learning. *Journal of
-> Healthcare Engineering*, 2021, Article 2146369.
-
-Full reference lists for every entropy/information-theoretic metric used are in
-[`reports/EEGMAT_MLP_entropy_metrics.docx`](reports/EEGMAT_MLP_entropy_metrics.docx) and the
-EEGMAT-literature comparison table is in
-[`reports/EEGMAT_MLP_performance_report.docx`](reports/EEGMAT_MLP_performance_report.docx).
 
 ## License
 

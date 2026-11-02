@@ -2,7 +2,6 @@
 
 Analysis code for the revised manuscript *When 99% Does Not Transfer: Subject-Dependent versus
 Subject-Independent Evaluation of EEG Mental-Stress Classification on EEGMAT*.
-It replaces the earlier code in `src/`.
 
 ## Setup
 ```
